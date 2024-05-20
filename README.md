@@ -4,3 +4,4 @@ The following pipeline is a proof of concept for verifying Calyx -- a hardware d
 - Ameliorate the issue of depending on various approximations and heuristics in symbolic execution algorithms, which can lead to less precise results.
 - Help developers understand non-carefully implemented algorithms, which might produce non-rigorous results.
 
+# Set Up and Development Environment 
