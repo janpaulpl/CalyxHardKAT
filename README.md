@@ -5,3 +5,7 @@ The following pipeline is a proof of concept for verifying Calyx -- a hardware d
 - Help developers understand non-carefully implemented algorithms, which might produce non-rigorous results.
 
 # Set Up and Development Environment 
+(Specify later)
+- Install Rust and set up a development environment.
+- Set up the Calyx compiler infrastructure
+- Set up a subset of the Calyx symbolic repo
