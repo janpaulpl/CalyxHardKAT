@@ -1,0 +1,3 @@
+- [Old Calyx issue on semantics for `par`](https://github.com/orgs/calyxir/discussions/921)
+- [..](https://github.com/orgs/calyxir/discussions/932)
+- [A few notes on Undefinedness](https://github.com/orgs/calyxir/discussions/922)

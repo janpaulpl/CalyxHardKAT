@@ -1,0 +1,305 @@
+\documentclass[sigplan,10pt,authorversion,nonacm]{acmart}
+% \documentclass[sigplan,10pt,anonymous,review]{acmart}
+\settopmatter{printfolios=false,printccs=false,printacmref=false}
+
+% Required packages
+\usepackage{amsmath}            % For math environments
+\usepackage{amsthm}             % For theorem environments
+\usepackage{mathpartir}
+\usepackage{listings}           % For code listings
+\usepackage{color}              % For defining custom colors
+\usepackage{xcolor}             % Required for setting colors in listings
+\usepackage{caption}
+\usepackage{tikz}               % For diagrams
+\usetikzlibrary{positioning, arrows.meta, shapes.geometric, fit}
+\usepackage{syntax}  % For drawing network diagrams
+\usepackage{proof}              % For tableaux-style proofs
+\usepackage{adjustbox}
+\usepackage{mdframed}
+
+% \acmConference[CPP'25]{Certified Programs and Proofs}{January 20--21, 2025}{Denver, USA}
+
+% New command for centering figures
+\newcommand{\centeredImage}[2][]{%
+  \begin{center}
+    \includegraphics[#1]{#2}
+  \end{center}
+}
+% If \coloneqq causes issues, redefine it here
+\newcommand{\coloneqq}{\mathrel{:=}}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+% Listing settings for OCaml
+\lstdefinelanguage{Calyx}{
+  keywords={let, in, type, match, with, function, fun, rec, struct, end, open, module, and, if, then, else, for, while, to, do, done, begin, of},
+  keywordstyle=\bfseries\color{blue},
+  comment=[l]{(*},
+  commentstyle=\color{gray}\ttfamily,
+  stringstyle=\color{red},
+  morestring=[b]",
+  moredelim=[s][\color{gray}]{(*}{*)},
+  literate={->}{{$\rightarrow$}}1 {=>}{{$\Rightarrow$}}1 {<-}{{$\leftarrow$}}1,
+}
+
+% General settings for listings
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  columns=fullflexible,
+  keepspaces=true,
+  breaklines=true,
+  frame=tb,                    % Adds a frame above and below the code block
+  numbers=left,                % Line numbers on the left
+  numberstyle=\tiny\color{gray}, % Line number style
+  stepnumber=1,                % Number every line
+  numbersep=5pt,               % Space between line numbers and code
+  showstringspaces=false,
+  tabsize=2,
+  captionpos=b,
+  framextopmargin=2pt,
+  framexbottommargin=2pt,
+  backgroundcolor=\color{white},
+  xleftmargin=5pt,
+}
+
+\title{Proposal: Concurrent KAT for Calyx}
+
+\author{Jan-Paul Ramos-D\'{a}vila}
+\affiliation{%
+  \institution{Cornell University}
+  \city{Ithaca}
+  \state{NY}
+  \country{USA}}
+\email{jvr34@cornell.edu}
+\orcid{0000-0003-1055-6785}
+
+\renewcommand{\shortauthors}{Ramos-D\'{a}vila}
+
+\begin{document}
+
+\begin{abstract}
+This proposal outlines a project to formalize and implement parallelism semantics in Calyx using ideas from Kleene Algebra with Tests (KAT) and Synchronous Kleene Algebra (SKA). The project aims to provide a rigorous foundation for reasoning about parallel execution in Calyx while addressing its specific needs for hardware design.
+\end{abstract}
+
+\maketitle
+
+\section{Project Outline}
+
+\subsection{Background and Motivation}
+\begin{itemize}
+    \item Overview of Calyx and its current \texttt{par} semantics
+    \item Need for formal semantics to reason about parallel execution
+    \item Introduction to Kleene Algebra with Tests and Synchronous Kleene Algebra
+\end{itemize}
+
+\subsection{Formalization of Calyx Parallelism using SKA}
+\begin{itemize}
+    \item Define a core subset of Calyx focusing on \texttt{par} constructs
+    \item Map Calyx constructs to SKA operators
+    \item Define semantics for \texttt{par} using SKA's synchronous product operator
+    \item Prove key properties of \texttt{par} using SKA axioms
+\end{itemize}
+
+\subsection{Extend SKA for Calyx-specific Needs}
+\begin{itemize}
+    \item Introduce latency-insensitive semantics to SKA
+    \item Define a "loose" synchronous product for non-deterministic execution order
+    \item Prove soundness and completeness of the extended algebra
+\end{itemize}
+
+\subsection{Operational Semantics and Implementation}
+\begin{itemize}
+    \item Define small-step operational semantics for Calyx \texttt{par} based on the SKA model
+    \item Implement a reference interpreter for the core Calyx subset
+    \item Develop compilation strategies for \texttt{par} based on the formal semantics
+\end{itemize}
+
+\section{Operational Semantics}
+
+The operational semantics for Calyx's par construct can be defined using a small-step semantics approach. This aligns most closely with the "Explicit Synchronization" semantics, as it allows for explicit control over the execution order and synchronization points.
+
+We define the following judgment for the execution of Calyx programs:
+
+\begin{mathpar}
+\inferrule*[right=Step]{
+  \langle p, \sigma \rangle \rightarrow \langle p', \sigma' \rangle
+}{
+  \text{Program $p$ in state $\sigma$ steps to $p'$ with new state $\sigma'$}
+}
+\end{mathpar}
+
+For the par construct, we define the following rules:
+
+\begin{mathpar}
+\inferrule*[right=Par-Left]{
+  \langle p_1, \sigma \rangle \rightarrow \langle p_1', \sigma' \rangle
+}{
+  \langle \texttt{par}\{p_1, p_2\}, \sigma \rangle \rightarrow \langle \texttt{par}\{p_1', p_2\}, \sigma' \rangle
+}
+
+\inferrule*[right=Par-Right]{
+  \langle p_2, \sigma \rangle \rightarrow \langle p_2', \sigma' \rangle
+}{
+  \langle \texttt{par}\{p_1, p_2\}, \sigma \rangle \rightarrow \langle \texttt{par}\{p_1, p_2'\}, \sigma' \rangle
+}
+
+\inferrule*[right=Par-Done]{
+  p_1 = \texttt{done} \quad p_2 = \texttt{done}
+}{
+  \langle \texttt{par}\{p_1, p_2\}, \sigma \rangle \rightarrow \langle \texttt{done}, \sigma \rangle
+}
+\end{mathpar}
+
+For groups, we can define:
+
+\begin{mathpar}
+\inferrule*[right=Group-Start]{
+  g \text{ is a group}
+}{
+  \langle g, \sigma \rangle \rightarrow \langle g_\text{body}, \sigma[g.\texttt{go} \mapsto 1] \rangle
+}
+
+\inferrule*[right=Group-Done]{
+  g.\texttt{done} = 1 \text{ in } \sigma
+}{
+  \langle g_\text{body}, \sigma \rangle \rightarrow \langle \texttt{done}, \sigma \rangle
+}
+\end{mathpar}
+
+To handle the latency-insensitive nature of Calyx, we can introduce a rule for delays:
+
+\begin{mathpar}
+\inferrule*[right=Delay]{
+  \text{true}
+}{
+  \langle \delta, \sigma \rangle \rightarrow \langle \texttt{done}, \sigma \rangle
+}
+\end{mathpar}
+
+This rule allows for arbitrary delays between operations, reflecting the latency-insensitive design of Calyx.
+
+These operational semantics reflect the "Explicit Synchronization" approach in the following ways:
+
+\begin{itemize}
+  \item The Par-Left and Par-Right rules allow for non-deterministic interleaving of parallel executions, capturing the idea that parallel arms can execute in any order.
+  \item The Group-Start and Group-Done rules explicitly model the activation and completion of groups, similar to the proposed synchronization points.
+  \item The Delay rule allows for modeling of latency-insensitive designs, where the exact timing of operations is not fixed.
+\end{itemize}
+
+% \paragraph{Explanation of Rules}
+
+% The operational semantics rules capture the essence of Calyx's parallel execution model:
+
+% \begin{itemize}
+%   \item \textbf{Par-Left} and \textbf{Par-Right}: These rules allow either the left or right component of a par construct to make progress independently. This captures the non-deterministic nature of parallel execution in hardware, where components may progress at different rates.
+  
+%   \item \textbf{Par-Done}: This rule specifies that a par construct completes only when both of its components have finished execution. This ensures proper synchronization at the end of parallel blocks.
+  
+%   \item \textbf{Group-Start}: This rule models the activation of a group by setting its 'go' signal. It transitions the group from its initial state to its body, representing the start of the group's execution.
+  
+%   \item \textbf{Group-Done}: This rule captures the completion of a group when its 'done' signal is set. It transitions the group's body to a done state, signifying the end of the group's execution.
+  
+%   \item \textbf{Delay}: This rule allows for arbitrary delays in execution, reflecting the latency-insensitive nature of Calyx. It can transition to a done state at any point, modeling variable-length operations or communication delays.
+% \end{itemize}
+
+% These rules provide a flexible framework for reasoning about Calyx programs. They allow for the modeling of concurrent execution (via Par-Left and Par-Right), explicit synchronization (via Group-Start and Group-Done), and latency-insensitive designs (via Delay). The non-determinism inherent in hardware execution is captured by the ability to apply Par-Left or Par-Right in any order, while still ensuring overall correctness through the Par-Done rule.
+
+% \section{Relation to KA Formulas}
+
+% The operational semantics can be related back to the KA formulas as follows:
+
+% \begin{align*}
+% \texttt{par}\{p_1, p_2\} &\equiv p_1 \times p_2 \\
+% g &\equiv g.\texttt{go} \cdot g_\text{body} \cdot g.\texttt{done} \\
+% \delta &\equiv 1 + \delta \cdot \delta \quad \text{(arbitrary delay)}
+% \end{align*}
+
+% Where $\times$ is the synchronous product from SKA, and $\cdot$ represents sequential composition. The delay operator $\delta$ is defined recursively to allow for arbitrary delays.
+
+% This formulation allows us to reason about Calyx programs using both operational semantics and algebraic laws, providing a rich framework for analysis and optimization.
+
+% \subsection{Optimizations and Analysis}
+% \begin{itemize}
+%     \item Develop algebraic optimizations for \texttt{par} constructs using SKA laws
+%     \item Implement static analysis techniques to detect potential data races
+%     \item Explore scheduling optimizations based on the formal model
+% \end{itemize}
+
+% \subsection{Integration with Existing Calyx Infrastructure}
+% \begin{itemize}
+%     \item Extend the Calyx IR to support the refined \texttt{par} semantics 
+%     \item Modify the Calyx compiler to use the new semantics and optimizations
+%     \item Ensure backwards compatibility with existing Calyx programs
+% \end{itemize}
+
+% \subsection{Evaluation}
+% \begin{itemize}
+%     \item Benchmark suite to test correctness and performance
+%     \item Case studies demonstrating improved reasoning about parallel Calyx programs
+%     \item Comparison with existing approaches (e.g., HLS tools)
+% \end{itemize}
+
+\section{Technical Questions}
+
+\subsection{Questions for Synchronous Kleene Algebra Authors}
+\begin{enumerate}
+    \item How can the SKA framework be extended to handle latency-insensitive designs?
+    \item Is it possible to define a "loose" synchronous product that allows for non-deterministic execution order while preserving essential properties?
+    \item How can we incorporate the concept of clock cycles or timing into the SKA framework to better model hardware behavior?
+    \item Are there any established techniques for handling state and side effects in SKA that could be applicable to Calyx's stateful components?
+\end{enumerate}
+
+\subsection{Questions for Calyx Semantics}
+\begin{enumerate}
+    \item How can we formally define the semantics of Calyx's groups and their interaction with the \texttt{par} construct?
+    \item What is the precise meaning of the "done" signal in Calyx, and how should it be incorporated into the formal semantics?
+    \item How should we handle potential conflicts between parallel executions of groups that modify the same state?
+    \item What is the desired level of determinism for Calyx's \texttt{par} construct, and how can this be formally specified?
+\end{enumerate}
+
+\section{KA Formulas in Calyx Context}
+
+To illustrate how KA formulas would look in the context of a Calyx program, consider the following Calyx snippet:
+
+\begin{lstlisting}[language=Calyx]
+group g1 {
+  x.in = a.out;
+  g1[done] = x.done;
+}
+
+group g2 {
+  y.in = b.out;
+  g2[done] = y.done;
+}
+
+control {
+  par { g1; g2 }
+}
+\end{lstlisting}
+
+We can represent this using KA formulas as follows:
+
+\begin{align*}
+g1 &\coloneqq (x.in \leftarrow a.out) \cdot (g1[done] \leftarrow x.done) \\
+g2 &\coloneqq (y.in \leftarrow b.out) \cdot (g2[done] \leftarrow y.done) \\
+par(g1, g2) &\coloneqq g1 \times g2
+\end{align*}
+
+Where $\times$ represents the synchronous product from SKA. We can then define properties such as:
+
+\begin{align*}
+par(g1, g2) &= par(g2, g1) \quad \text{(commutativity)} \\
+par(g1, par(g2, g3)) &= par(par(g1, g2), g3) \quad \text{(associativity)}
+\end{align*}
+
+To handle latency-insensitive designs, we might introduce a delay operator $\delta$ and modify our formulas:
+
+\begin{align*}
+g1 &\coloneqq (x.in \leftarrow a.out) \cdot \delta \cdot (g1[done] \leftarrow x.done) \\
+g2 &\coloneqq (y.in \leftarrow b.out) \cdot \delta \cdot (g2[done] \leftarrow y.done)
+\end{align*}
+
+This allows for a variable number of cycles between the input assignment and the done signal.
+
+\end{document}
